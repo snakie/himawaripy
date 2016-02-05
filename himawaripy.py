@@ -1,15 +1,14 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 from io import BytesIO
 from json import loads
 from time import strptime, strftime
 from os import system
 from os.path import expanduser
-from urllib.request import urlopen
+from urllib2 import urlopen
 
 from PIL import Image
 
-from utils import get_desktop_environment
 
 # Configuration
 # =============
@@ -24,8 +23,8 @@ def main():
     height = 550
 
     print("Updating...")
-    with urlopen("http://himawari8-dl.nict.go.jp/himawari8/img/D531106/latest.json") as latest_json:
-        latest = strptime(loads(latest_json.read().decode("utf-8"))["date"], "%Y-%m-%d %H:%M:%S")
+    latest_json =  urlopen("http://himawari8-dl.nict.go.jp/himawari8/img/D531106/latest.json")
+    latest = strptime(loads(latest_json.read().decode("utf-8"))["date"], "%Y-%m-%d %H:%M:%S")
 
     print("Latest version: {} GMT\n".format(strftime("%Y/%m/%d/%H:%M:%S", latest)))
 
@@ -33,33 +32,23 @@ def main():
 
     png = Image.new('RGB', (width*level, height*level))
 
-    print("Downloading tiles: 0/{} completed".format(level*level), end="\r")
+    print("Downloading tiles: 0/{} completed".format(level*level))
     for x in range(level):
         for y in range(level):
-            with urlopen(url_format.format(level, width, strftime("%Y/%m/%d/%H%M%S", latest), x, y)) as tile_w:
-                tiledata = tile_w.read()
+            tile_w = urlopen(url_format.format(level, width, strftime("%Y/%m/%d/%H%M%S", latest), x, y))
+            tiledata = tile_w.read()
 
             tile = Image.open(BytesIO(tiledata))
             png.paste(tile, (width*x, height*y, width*(x+1), height*(y+1)))
 
-            print("Downloading tiles: {}/{} completed".format(x*level + y + 1, level*level), end="\r")
+            print("Downloading tiles: {}/{} completed".format(x*level + y + 1, level*level))
     print("\nDownloaded\n")
 
-    output_file = expanduser("~/.himawari-latest.png")
+    file_loc = "~/himawaripy/himawari-latest.png"
+    output_file = expanduser(file_loc)
     png.save(output_file, "PNG")
+    print("saved file to %s" % file_loc)
 
-    de = get_desktop_environment()
-    if de in ["gnome", "unity", "cinnamon"]:
-        # Because of a bug and stupid design of gsettings, see http://askubuntu.com/a/418521/388226
-        system("gsettings set org.gnome.desktop.background draw-background false \
-                && gsettings set org.gnome.desktop.background picture-uri file://" + output_file +
-                " && gsettings set org.gnome.desktop.background picture-options scaled")
-    elif de == "mate":
-        system("gconftool-2 -type string -set /desktop/gnome/background/picture_filename \"{}\"".format(output_file))
-    elif de == "xfce4":
-        system("xfconf-query --channel xfce4-desktop --property /backdrop/screen0/monitor0/image-path --set " + output_file)
-    else:
-        exit("Your desktop environment '{}' is not supported.".format(de))
 
     print("Done!\n")
 

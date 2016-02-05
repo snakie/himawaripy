@@ -14,6 +14,9 @@ This is a fork of the original specifically for OS X
 ## Installation
     cd ~
     git clone https://github.com/snakie/himawaripy.git
+
+    # install pillow
+    brew install homebrew/python/pillow
     
     # configure
     cd ~/himawaripy
@@ -25,7 +28,7 @@ This is a fork of the original specifically for OS X
     # set up a cronjob
     crontab -e
     # Add the line:
-    # */10 * * * * $HOME/himawaripy/himawaripy.py && 
+    */10 * * * * $HOME/himawaripy/himawaripy.py > /dev/null && $HOME/himawaripy/update_wallpaper.sh 
     
 ## Example
 ![Earth, as 2016/02/04/13:30:00 GMT](http://i.imgur.com/4XA6WaM.jpg)
